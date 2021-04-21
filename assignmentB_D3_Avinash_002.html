@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histogram Plotting</title>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <style>
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+        }
+        .menu {
+            float: right; 
+            margin-right: 50px;
+            margin-left: 50px;
+            margin-top: 30px;
+            height: 580px;
+            width: 400px;
+            padding-left: 80px;
+            border-radius: 5%;
+            align-content: center;
+            background-color: rgba(235, 235, 238, 0.952);
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+            font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="my_dataviz">
+    </div>
+    <div class="container">
+        <h1 style="margin-left: 25%; font-size:42px; ">Histogram Plotting Using D3.js</h1>
+        <div class="menu">
+            <h3 style="color: crimson;">* Request you to first fill all the values then choose distribution.</h3>
+            <label for="distri"><h3>Select the type of Distribution </h3></label>
+            <select name="distri" id="distri" onchange="uniform()">
+                <option >-- select --</option>
+                <option value="normal">Normal Distribution</option>
+                <option value="uni">Uniform Distribution</option>
+                <option value="exp">Exponential Distribution</option>
+            </select>
+            <label for="distri"><h3>Replacement </h3></label>
+            <select name="replace" id="replace">
+                <option value="sel">-- select --</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select><br>
+            <label for="sample"><h3 style="margin-bottom: 0px;">Sample Size </h3></label><br>
+            <input type="number" id="sample" name="sample"><br>
+            <label for="mean"><h3 style="margin-bottom: 0px;">Enter Mean value </h3></label><br>
+            <input type="text" id="mean" name="mean"><br>
+            <label for="dev"><h3 style="margin-bottom: 0px;">Enter Deviation value </h3></label><br>
+            <input type="text" id="dev" name="dev"><br>
+            <label for="dev"><h3 style="margin-bottom: 0px;">Enter lambda value </h3></label><br>
+            <input type="text" id="lam" name="lam"><br>
+
+        </div>
+    
+    <script>
+        function uniform() {
+            if(document.getElementById('distri').value == "uni") {
+                if (document.getElementById('sample').value  == "") {
+                    alert("Enter number of sample first");
+                  }
+                if (document.getElementById('replace').value  == "sel") {
+                    alert("Fill the replacement column");
+                    
+                  }
+
+
+                var data=[];
+                var sample = document.getElementById('sample').value;
+                if (document.getElementById('replace').value  == "yes") {
+                    while(data.length < sample){
+                        var r = Math.floor(Math.random()*100) + 1;
+                        data.push(r);
+                    }
+                  }
+                else if (document.getElementById('replace').value  == "no") {
+                    while(data.length < sample){
+                        var r = Math.floor(Math.random()*100) + 1;
+                        if(data.indexOf(r)===-1) data.push(r);
+                    }
+                  }
+
+                
+                
+                console.log(data);
+                min = d3.min(data);
+                max = d3.max(data);
+                domain = [min,max];
+
+                var margin = { top: 30, right: 30, bottom: 30, left: 50 },
+                width = 600 - margin.left - margin.right,
+                height = 500 - margin.top - margin.bottom;
+
+                // The number of bins
+                Nbin = 10;
+                var x = d3
+                .scaleLinear()
+                .domain(domain)
+                .range([0, width]);
+
+                var histogram = d3
+                    .histogram()
+                    .domain(x.domain()) // then the domain of the graphic
+                    .thresholds(x.ticks(Nbin)); // then the numbers of bins
+
+                // And apply this function to data to get the bins
+                var bins = histogram(data);
+                // Add the svg element to the body and set the dimensions and margins of the graph
+                var svg = d3
+                    .select("body")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                svg
+                    .append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+
+                var y = d3
+                    .scaleLinear()
+                    .range([height, 0])
+                    .domain([
+                    0,
+                    d3.max(bins, function(d) {
+                        return d.length;
+                    })
+                    ]);
+                
+                svg.append("g").call(d3.axisLeft(y));
+                svg.append("text")
+                    .attr("x", (width / 2))             
+                    .attr("y", 0 - (margin.top / 2))
+                    .attr("text-anchor", "middle")  
+                    .style("font-size", "20px") 
+                    .style("text-decoration", "underline")  
+                    .text("Uniform Distribution");
+
+            
+
+                svg.append("text")
+                    .attr("class", "y label")
+                    .attr("text-anchor", "end")
+                    .attr("y", 6)
+                    .attr("dy", ".75em")
+                    .attr("transform", "rotate(-90)")
+                    .text("frequency");
+
+                svg
+                    .selectAll("rect")
+                    .data(bins)
+                    .enter()
+                    .append("rect")
+                    .attr("x", 1)
+                    .attr("transform", function(d) {
+                        return "translate(" + x(d.x0) + "," + y(d.length) + ")";
+                    })
+                    .attr("width", function(d) {
+                        return x(d.x1) - x(d.x0) - 1;
+                    })
+                    .attr("height", function(d) {
+                        return height - y(d.length);
+                    })
+                    .on('mouseover', function(d, i) {
+                        
+                        d3.select(this).attr('style', 'fill: orange;');
+                      })
+                    .on('mouseout', function(d, i) {
+                        
+                        d3.select(this).attr('style', 'fill: blue;');
+                      })
+                    .style("fill", "#0000ff");
+                    
+                }
+                
+            //*****************NORMAL DISTRIBUTION*****************
+
+            else if(document.getElementById('distri').value == "normal") {
+                if (document.getElementById('mean').value  == "") {
+                    alert("Enter mean value");
+                  }
+                if (document.getElementById('dev').value  == "") {
+                    alert("Enter deviation value");
+                  }
+                var normalMean = document.getElementById('mean').value,
+                normalStdDev = document.getElementById('dev').value;
+                var sample = document.getElementById('sample').value;
+                var numDataPoints = sample;
+                dataPoints = d3.range(numDataPoints)
+                .map(function() { 
+                var a = d3.randomNormal(normalMean, normalStdDev); 
+                return Math.round(a());
+                
+                });
+
+                console.log(dataPoints);
+                min = d3.min(dataPoints);
+                max = d3.max(dataPoints);
+                domain = [min,max];
+
+                var margin = { top: 30, right: 30, bottom: 30, left: 50 },
+                width = 600 - margin.left - margin.right,
+                height = 500 - margin.top - margin.bottom;
+
+                // The number of bins
+                Nbin = 10;
+                var x = d3
+                .scaleLinear()
+                .domain(domain)
+                .range([0, width]);
+
+                var histogram = d3
+                    .histogram()
+                    .domain(x.domain()) // then the domain of the graphic
+                    .thresholds(x.ticks(Nbin)); // then the numbers of bins
+
+                // And apply this function to data to get the bins
+                var bins = histogram(dataPoints);
+                // Add the svg element to the body and set the dimensions and margins of the graph
+                var svg = d3
+                    .select("body")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                svg
+                    .append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+
+                var y = d3
+                    .scaleLinear()
+                    .range([height, 0])
+                    .domain([
+                    0,
+                    d3.max(bins, function(d) {
+                        return d.length;
+                    })
+                    ]);
+                
+                svg.append("g").call(d3.axisLeft(y));
+                svg.append("text")
+                    .attr("x", (width / 2))             
+                    .attr("y", 0 - (margin.top / 2))
+                    .attr("text-anchor", "middle")  
+                    .style("font-size", "20px") 
+                    .style("text-decoration", "underline")  
+                    .text("Normal Distribution");
+
+                svg.append("text")
+                    .attr("class", "y label")
+                    .attr("text-anchor", "end")
+                    .attr("y", 6)
+                    .attr("dy", ".75em")
+                    .attr("transform", "rotate(-90)")
+                    .text("frequency");
+
+                svg
+                    .selectAll("rect")
+                    .data(bins)
+                    .enter()
+                    .append("rect")
+                    .attr("x", 1)
+                    .attr("transform", function(d) {
+                        return "translate(" + x(d.x0) + "," + y(d.length) + ")";
+                    })
+                    .attr("width", function(d) {
+                        return x(d.x1) - x(d.x0) - 1;
+                    })
+                    .attr("height", function(d) {
+                        return height - y(d.length);
+                    })
+                    .on('mouseover', function(d, i) {
+                        
+                        d3.select(this).attr('style', 'fill: orange;');
+                      })
+                    .on('mouseout', function(d, i) {
+                        
+                        d3.select(this).attr('style', 'fill: blue;');
+                      })
+                    .style("fill", "#0000ff");
+                }
+
+
+            //*****************EXPONENTIAL DISTRIBUTION*****************
+                else if(document.getElementById('distri').value == "exp") {
+                    if (document.getElementById('lam').value  == "") {
+                        alert("Enter lambda value");
+                      }
+                    var lambda = document.getElementById('lam').value;
+                    var sample = document.getElementById('sample').value;
+                    var numDataPoints = sample;
+                    var numDataPoints = sample;
+                    dataPoints = d3.range(numDataPoints)
+                    .map(function() { 
+                    var a = d3.randomExponential(lambda); 
+                    return Math.abs(a());
+                    });
+                    console.log(dataPoints);
+                    min = d3.min(dataPoints);
+                    max = d3.max(dataPoints);
+                    domain = [min,max];
+    
+                    var margin = { top: 30, right: 30, bottom: 30, left: 50 },
+                    width = 600 - margin.left - margin.right,
+                    height = 500 - margin.top - margin.bottom;
+    
+                    // The number of bins
+                    Nbin = 10;
+                    var x = d3
+                    .scaleLinear()
+                    .domain(domain)
+                    .range([0, width]);
+    
+                    var histogram = d3
+                        .histogram()
+                        .domain(x.domain()) // then the domain of the graphic
+                        .thresholds(x.ticks(Nbin)); // then the numbers of bins
+    
+                    // And apply this function to data to get the bins
+                    var bins = histogram(dataPoints);
+                    // Add the svg element to the body and set the dimensions and margins of the graph
+                    var svg = d3
+                        .select("body")
+                        .append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
+                    svg
+                        .append("g")
+                        .attr("transform", "translate(0," + height + ")")
+                        .call(d3.axisBottom(x));
+    
+                    var y = d3
+                        .scaleLinear()
+                        .range([height, 0])
+                        .domain([
+                        0,
+                        d3.max(bins, function(d) {
+                            return d.length;
+                        })
+                        ]);
+                    
+                    svg.append("g").call(d3.axisLeft(y));
+                    svg.append("text")
+                        .attr("x", (width / 2))             
+                        .attr("y", 0 - (margin.top / 2))
+                        .attr("text-anchor", "middle")  
+                        .style("font-size", "20px") 
+                        .style("text-decoration", "underline")  
+                        .text("Exponential Distribution");
+                    
+                    svg.append("text")
+                        .attr("class", "y label")
+                        .attr("text-anchor", "end")
+                        .attr("y", 6)
+                        .attr("dy", ".75em")
+                        .attr("transform", "rotate(-90)")
+                        .text("frequency");
+                    svg
+                        .selectAll("rect")
+                        .data(bins)
+                        .enter()
+                        .append("rect")
+                        .attr("x", 1)
+                        .attr("transform", function(d) {
+                            return "translate(" + x(d.x0) + "," + y(d.length) + ")";
+                        })
+                        .attr("width", function(d) {
+                            return x(d.x1) - x(d.x0) - 1;
+                        })
+                        .attr("height", function(d) {
+                            return height - y(d.length);
+                        })
+                        .on('mouseover', function(d, i) {
+                            
+                            d3.select(this).attr('style', 'fill: orange;');
+                          })
+                        .on('mouseout', function(d, i) {
+                            d3.select(this).attr('style', 'fill: blue;');
+                          })
+                        .style("fill", "#0000ff");
+                    
+                    }
+                
+                
+                }
+
+    </script>
+
+    
+</body>
+</html>
